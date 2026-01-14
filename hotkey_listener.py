@@ -1,33 +1,39 @@
-"""Слушатель глобальных горячих клавиш."""
+"""Слушатель хоткеев через keyboard."""
 
-from PyQt6.QtCore import QThread, pyqtSignal
 import keyboard
+from PyQt6.QtCore import QObject, QTimer, pyqtSignal
 
 
-class HotkeyListener(QThread):
-    """Фоновый поток для отслеживания горячих клавиш."""
+class HotkeyListener(QObject):
+    """Слушатель Alt+T."""
 
     activated = pyqtSignal()
 
-    def __init__(self, hotkey: str = 'alt+t'):
+    def __init__(self):
         super().__init__()
-        self.hotkey = hotkey
-        self.running = True
+        self.timer = None
+        self.was_pressed = False
 
-    def run(self):
-        """Запуск прослушивания."""
-        keyboard.add_hotkey(self.hotkey, self._emit_signal)
+    def start(self):
+        """Запуск."""
+        self.timer = QTimer(self)
+        self.timer.timeout.connect(self._check)
+        self.timer.start(50)
 
-        while self.running:
-            keyboard.wait()
+    def _check(self):
+        """Проверка нажатия."""
+        try:
+            pressed = keyboard.is_pressed('alt+t')
 
-    def _emit_signal(self):
-        """Отправка сигнала в главный поток."""
-        self.activated.emit()
+            if pressed and not self.was_pressed:
+                self.activated.emit()
+
+            self.was_pressed = pressed
+        except:
+            pass
 
     def stop(self):
-        """Остановка прослушивания."""
-        self.running = False
-        keyboard.unhook_all()
-        self.quit()
-        self.wait()
+        """Остановка."""
+        if self.timer:
+            self.timer.stop()
+            self.timer = None

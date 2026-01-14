@@ -1,41 +1,42 @@
-"""Сервис перевода."""
+"""Оптимизированный сервис перевода."""
 
 from deep_translator import GoogleTranslator
 
 
 class TranslatorService:
-    """Сервис для перевода текста."""
+    """Синглтон сервиса перевода с кэшированием."""
 
-    def __init__(self):
-        self._cache = {}
+    _instance = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super().__new__(cls)
+            cls._instance._cache = {}
+            cls._instance._translators = {}
+        return cls._instance
 
     def translate(self, text: str, source: str, target: str) -> str:
-        """
-        Перевести текст.
-
-        Args:
-            text: Исходный текст
-            source: Исходный язык ('auto' для автоопределения)
-            target: Целевой язык
-
-        Returns:
-            Переведенный текст
-        """
+        """Перевод с кэшированием."""
         # Проверяем кэш
-        cache_key = (text, source, target)
+        cache_key = (text[:100], source, target)  # Ограничиваем ключ
         if cache_key in self._cache:
             return self._cache[cache_key]
 
-        # Переводим
-        translator = GoogleTranslator(source=source, target=target)
-        result = translator.translate(text)
+        # Переиспользуем переводчик
+        translator_key = (source, target)
+        if translator_key not in self._translators:
+            self._translators[translator_key] = GoogleTranslator(
+                source=source, target=target
+            )
 
-        # Сохраняем в кэш
+        result = self._translators[translator_key].translate(text)
+
+        # Кэшируем (максимум 50 записей)
+        if len(self._cache) >= 50:
+            # Удаляем старые
+            keys = list(self._cache.keys())[:10]
+            for k in keys:
+                del self._cache[k]
+
         self._cache[cache_key] = result
-
-        # Ограничиваем размер кэша
-        if len(self._cache) > 100:
-            oldest_key = next(iter(self._cache))
-            del self._cache[oldest_key]
-
         return result

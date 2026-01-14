@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Точка входа в приложение."""
+"""Точка входа."""
 
 import sys
-import os
 
-# Скрываем консоль на Windows
+# Скрываем консоль
 if sys.platform == 'win32':
     import ctypes
 
@@ -13,21 +12,14 @@ if sys.platform == 'win32':
     )
 
 from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import Qt
 from translator_app import TranslatorApp
 
 
 def main():
-    # Включаем высокий DPI
-    QApplication.setHighDpiScaleFactorRoundingPolicy(
-        Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
-    )
-
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)  # Не закрывать при скрытии окна
+    app.setQuitOnLastWindowClosed(False)
 
     translator = TranslatorApp()
-    translator.show()
 
     sys.exit(app.exec())
 
